@@ -1,4 +1,5 @@
 import Foundation
+import RC505Core
 
 // rc505 [--root <folder containing public/ and config.json>] [--port <n>]
 // The root defaults to the current directory.

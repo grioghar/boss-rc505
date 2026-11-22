@@ -7,7 +7,7 @@ Control a Boss RC-505 Loop Station (original model, firmware 2.0) from a Mac ove
 ## What it does
 
 - **Bridge** between the looper's USB MIDI port and the browser (HTTP + WebSocket on `localhost:5055`). There are two interchangeable implementations that serve the same pages:
-  - `Sources/rc505` — Swift, no third-party packages. MIDI through CoreMIDI (macOS), ALSA raw MIDI (Linux) or WinMM (Windows).
+  - `Sources/RC505Core` — Swift, no third-party packages; run it as the `rc505` command-line tool on any platform or as `RC-505.app` on macOS. MIDI through CoreMIDI (macOS), ALSA raw MIDI (Linux) or WinMM (Windows).
   - `server.js` — the original Node.js version.
 - `http://localhost:5055/` — control page: per-track rec/play/overdub and stop, all start/stop, memory select.
 - `http://localhost:5055/overlay` — transparent OBS browser source in the RC-505's own colours: five track buttons with LED loop rings, an LCD-style memory/tempo readout, a beat pulse and a label on each press. Options: `?style=outline` (nothing filled, so video behind shows through), `?scale=1.5`, `?pos=top`, `?align=left|right`.
@@ -59,6 +59,10 @@ Run it from the project folder, or pass `--root <folder>` (the folder holding `p
 | Windows | Swift toolchain; Roland RC-505 USB driver | Written, not yet built or tested |
 
 `./build.sh` makes a release build in `dist/` and, on macOS, signs it with the identity in `CODESIGN_IDENTITY`.
+
+### macOS app
+
+`./build.sh --install` also builds `dist/RC-505.app` and copies it to `/Applications`. The app bundles the web pages, `config.json` and the memory snapshot, runs the bridge, and shows the control page in a window. Closing the window leaves the bridge running so the OBS overlay keeps working; quit the app to stop it. The Overlay menu copies the overlay URLs for OBS. Its state lives in `~/Library/Application Support/RC-505`. Rebuild after `tools/snapshot.js` to pick up new memory names.
 
 ### Node bridge
 

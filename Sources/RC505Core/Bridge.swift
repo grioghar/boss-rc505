@@ -7,7 +7,7 @@ import Foundation
 //   - it reports each track's rec/dub and play/stop as CCs (config "report")
 //   - three CCs control it: step the "target track", rec/play it, stop it (config "control")
 
-func log(_ text: String) { FileHandle.standardOutput.write(Data((text + "\n").utf8)) }
+public func log(_ text: String) { FileHandle.standardOutput.write(Data((text + "\n").utf8)) }
 private func nowMs() -> Double { (Date().timeIntervalSince1970 * 1000).rounded() }
 
 struct Config {
@@ -55,8 +55,10 @@ struct Track {
     var isRunning: Bool { state == "rec" || state == "play" || state == "overdub" }
 }
 
-final class Bridge {
+public final class Bridge {
     private let root: URL
+    /// Where the memory snapshot is read from and the last known state is saved.
+    private let dataDirectory: URL
     private let config: Config
     private var memories: [Int: MemoryInfo] = [:]
     private var snapshotCurrentMemory = 1
@@ -91,13 +93,17 @@ final class Bridge {
     private var tickCount = 0
     private var intervals: [Double] = []
 
-    init(root: URL, portOverride: Int?) {
+    public var port: Int { config.httpPort }
+
+    /// `root` holds `public/` and `config.json`; `dataDirectory` defaults to `root/data`.
+    public init(root: URL, dataDirectory: URL? = nil, portOverride: Int? = nil) {
         self.root = root
+        self.dataDirectory = dataDirectory ?? root.appendingPathComponent("data")
         var cfg = Config(file: root.appendingPathComponent("config.json"))
         if let p = portOverride { cfg.httpPort = p }
         config = cfg
         loadSnapshot()
-        if let saved = readJSON("data/state.json") as? [String: Any], let memory = saved["memory"] as? Int {
+        if let saved = readData("state.json") as? [String: Any], let memory = saved["memory"] as? Int {
             targetTrack = saved["targetTrack"] as? Int ?? 1
             loadMemory(memory, keepTarget: true)
         } else {
@@ -107,13 +113,13 @@ final class Bridge {
 
     // MARK: setup
 
-    private func readJSON(_ relative: String) -> Any? {
-        guard let data = try? Data(contentsOf: root.appendingPathComponent(relative)) else { return nil }
+    private func readData(_ name: String) -> Any? {
+        guard let data = try? Data(contentsOf: dataDirectory.appendingPathComponent(name)) else { return nil }
         return try? JSONSerialization.jsonObject(with: data)
     }
 
     private func loadSnapshot() {
-        guard let o = readJSON("data/memories.json") as? [String: Any] else { return }
+        guard let o = readData("memories.json") as? [String: Any] else { return }
         snapshotCurrentMemory = o["currentMemory"] as? Int ?? 1
         for m in o["memories"] as? [[String: Any]] ?? [] {
             guard let number = m["number"] as? Int else { continue }
@@ -129,7 +135,7 @@ final class Bridge {
         }
     }
 
-    func start() -> Bool {
+    public func start() -> Bool {
         server.onRequest = { [unowned self] path in self.handleRequest(path) }
         server.onSocketOpen = { [unowned self] client in
             let text = self.model.sync { self.stateMessage() }
@@ -181,9 +187,8 @@ final class Bridge {
     }
 
     private func persist() {
-        let dir = root.appendingPathComponent("data")
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        try? Data(jsonString(["memory": memoryNumber, "targetTrack": targetTrack]).utf8).write(to: dir.appendingPathComponent("state.json"))
+        try? FileManager.default.createDirectory(at: dataDirectory, withIntermediateDirectories: true)
+        try? Data(jsonString(["memory": memoryNumber, "targetTrack": targetTrack]).utf8).write(to: dataDirectory.appendingPathComponent("state.json"))
     }
 
     // MARK: messages to the pages (model queue)
