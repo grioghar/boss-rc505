@@ -1,0 +1,19 @@
+{
+  "comment": "Final layout for every memory. Slots 1-3 (pedal assigns) are left alone. Slots 4-13 make the looper report each track's rec/dub (CC#1-5) and play/stop (CC#6-10); slots 14-16 let the bridge step the target track (CC#20) and rec/play (CC#21) or stop (CC#22) it.",
+  "memories": "all",
+  "assigns": {
+    "4":  { "src": 5,  "tgt": 80, "min": 0, "max": 127 },
+    "5":  { "src": 6,  "tgt": 81, "min": 0, "max": 127 },
+    "6":  { "src": 7,  "tgt": 82, "min": 0, "max": 127 },
+    "7":  { "src": 8,  "tgt": 83, "min": 0, "max": 127 },
+    "8":  { "src": 9,  "tgt": 84, "min": 0, "max": 127 },
+    "9":  { "src": 10, "tgt": 85, "min": 0, "max": 127 },
+    "10": { "src": 11, "tgt": 86, "min": 0, "max": 127 },
+    "11": { "src": 12, "tgt": 87, "min": 0, "max": 127 },
+    "12": { "src": 13, "tgt": 88, "min": 0, "max": 127 },
+    "13": { "src": 14, "tgt": 89, "min": 0, "max": 127 },
+    "14": { "src": 35, "tgt": 76 },
+    "15": { "src": 36, "tgt": 30 },
+    "16": { "src": 37, "tgt": 31 }
+  }
+}

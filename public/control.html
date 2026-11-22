@@ -7,8 +7,8 @@
 <link rel="stylesheet" href="ring.css">
 <style>
   :root { color-scheme: dark; }
-  body { margin: 0; background: #0d0f13; color: #e8eaee; font: 14px/1.4 -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif; }
-  main { max-width: 860px; margin: 0 auto; padding: 20px 16px 40px; }
+  body { margin: 0; background: #0a0a0b; color: #e8eaee; font: 14px/1.4 -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 20px 16px 40px; border-top: 4px solid #d0101c; }
   header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
   h1 { font-size: 18px; margin: 0; }
   #status { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #3a1f1f; color: #ff8a80; }
@@ -23,18 +23,20 @@
   #memory { display: flex; gap: 8px; align-items: center; margin-bottom: 18px; }
   #memory select { flex: 1; min-width: 0; }
 
+  #notice { color: #ffb86b; min-height: 20px; margin: -8px 0 10px; font-size: 13px; }
   #tracks { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
-  .track { background: #13161c; border: 1px solid #222731; border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .track { background: #131315; border: 1px solid #26272b; border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
   .track .ringbtn { background: none; border: none; padding: 0; border-radius: 50%; }
   .track .ringbtn:hover { background: none; filter: brightness(1.2); }
   .track .label { margin: 0; }
+  .track .num { top: 8px; left: 10px; }
   .track .row { display: flex; gap: 6px; }
   .track .row button { flex: 1; padding: 7px 4px; font-size: 12px; }
   .track select { font-size: 11px; padding: 4px 6px; opacity: 0.6; }
 
   #global { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
   #global button { flex: 1; min-width: 130px; padding: 14px; font-weight: 600; }
-  #all { background: #1d3a2a; border-color: #2c5a40; }
+  #all { background: #1a1a1d; border-color: #d0101c; }
   p.note { opacity: 0.55; font-size: 12px; margin-top: 18px; }
   @media (max-width: 620px) { #tracks { grid-template-columns: repeat(2, 1fr); } }
 </style>
@@ -53,17 +55,16 @@
     <button id="mem-next" aria-label="Next memory">▶</button>
   </div>
 
+  <div id="notice" role="status"></div>
   <div id="tracks"></div>
 
   <div id="global">
     <button id="all" data-press="all">All Start/Stop<kbd>Space</kbd></button>
-    <button data-press="undo">Undo/Redo<kbd>Z</kbd></button>
-    <button data-press="tap">Tap Tempo<kbd>T</kbd></button>
   </div>
 
   <p class="note">
     Keys: <b>1–5</b> rec/play/overdub, <b>Shift+1–5</b> stop, <b>Space</b> all start/stop.
-    The looper doesn't report per-track status, so the rings follow the commands sent from here; if you press a track button on the looper itself, use the small menu under a track to correct it.
+    The rings follow the looper's own status reports, including presses on its hardware buttons. It doesn't report clearing a track or switching between play and overdub from the hardware; use the small menu under a track to correct the display if it drifts.
   </p>
 </main>
 <script src="client.js"></script>
@@ -72,11 +73,11 @@
   const tracksEl = document.getElementById('tracks');
   tracksEl.innerHTML = [1, 2, 3, 4, 5].map((n) => `
     <div class="track" data-state="empty">
+      <span class="num">${n}</span>
       <button class="ringbtn" data-press="t${n}.recplay" aria-label="Track ${n} rec/play">${RCRing.svg(n)}</button>
       <div class="label">Empty</div>
       <div class="row">
         <button data-press="t${n}.stop">Stop</button>
-        <button data-press="t${n}.clear">Clear</button>
       </div>
       <select data-fix="${n - 1}" aria-label="Correct track ${n} status">
         <option value="">Correct status…</option>
@@ -91,7 +92,6 @@
   document.addEventListener('click', (e) => {
     const b = e.target.closest('[data-press]');
     if (!b) return;
-    if (b.dataset.press.endsWith('.clear') && !confirm(`Clear track ${b.dataset.press[1]}? This erases its loop on the looper.`)) return;
     RC.press(b.dataset.press);
   });
   document.addEventListener('change', (e) => {
@@ -108,8 +108,6 @@
     const digit = e.code.match(/^Digit([1-5])$/);
     if (digit) RC.press(`t${digit[1]}.${e.shiftKey ? 'stop' : 'recplay'}`);
     else if (e.code === 'Space') { e.preventDefault(); RC.press('all'); }
-    else if (e.code === 'KeyZ') RC.press('undo');
-    else if (e.code === 'KeyT') RC.press('tap');
   });
 
   let namesLoaded = false;
@@ -134,6 +132,7 @@
     if (namesLoaded) memSelect.value = s.memory.number;
     s.tracks.forEach((t, i) => { els[i].dataset.state = t.state; els[i].querySelector('.label').textContent = LABEL[t.state]; });
   });
+  RC.on('notice', (n) => { const el = document.getElementById('notice'); el.textContent = n.text; clearTimeout(el.t); el.t = setTimeout(() => { el.textContent = ''; }, 5000); });
   RC.on('press', (p) => {
     const m = p.id.match(/^t([1-5])\./);
     if (m) { const el = els[m[1] - 1]; el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit'); }

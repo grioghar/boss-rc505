@@ -40,6 +40,7 @@ for (const m of xml.matchAll(/<mem id="(\d+)">([\s\S]*?)<\/mem>/g)) {
     name,
     tempo: (num(section(body, 'MASTER'), 'Tmp') || 1200) / 10,
     recAction: num(section(body, 'REC_OPTION'), 'RecAct'),
+    targetTrack: (num(section(body, 'PLAY_OPTION'), 'TgtTr') ?? 0) + 1,
     tracks,
   });
 }

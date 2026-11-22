@@ -1,31 +1,52 @@
+/* Colours taken from the RC-505's panel: gloss-black body, red LED loop ring,
+   green / red / amber centre button, red header strip, blue-white LCD. */
 :root {
-  --rec: #ff3b30;
-  --play: #30d158;
-  --dub: #ffd60a;
-  --idle: #5b6470;
-  --empty: #2a2f37;
+  --rec: #ff2a1c;
+  --play: #1fd65a;
+  --dub: #ffae00;
+  --led: #ff2416;
+  --led-off: #3a0d0a;
+  --button-off: #2b2d31;
+  --body: #0a0a0b;
+  --panel: #131315;
+  --strip: #d0101c;
+  --lcd: #2f6fe0;
+  --lcd-text: #eaf3ff;
 }
-.track { --c: var(--empty); position: relative; }
-.track[data-state="stop"] { --c: var(--idle); }
-.track[data-state="play"] { --c: var(--play); }
-.track[data-state="rec"] { --c: var(--rec); }
-.track[data-state="overdub"] { --c: var(--dub); }
+.track { --c: var(--button-off); --glyph: #8a8d93; position: relative; }
+.track[data-state="stop"] { --c: #3d4046; --glyph: #c9ccd1; }
+.track[data-state="play"] { --c: var(--play); --glyph: #04260f; }
+.track[data-state="rec"] { --c: var(--rec); --glyph: #2b0502; }
+.track[data-state="overdub"] { --c: var(--dub); --glyph: #2e1e00; }
 
 .ring { width: 100%; display: block; overflow: visible; }
-.ring-base { fill: rgba(10, 12, 16, 0.78); stroke: var(--c); stroke-width: 7; opacity: 0.45; transition: stroke 0.12s; }
-.ring-arc { fill: none; stroke: var(--c); stroke-width: 7; stroke-linecap: round; filter: drop-shadow(0 0 5px var(--c)); transition: stroke 0.12s; }
-.ring-num { fill: #fff; font: 700 30px/1 -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif; text-anchor: middle; dominant-baseline: central; }
-.track[data-state="empty"] .ring-arc { display: none; }
-.track[data-state="empty"] .ring-num { opacity: 0.4; }
-.track[data-state="rec"] .ring-arc { animation: recpulse 0.9s ease-in-out infinite; }
-@keyframes recpulse { 50% { opacity: 0.35; } }
+.ring-body { fill: var(--body); stroke: #26272b; stroke-width: 1.5; }
+/* 24 LED segments around the ring */
+.ring-leds { fill: none; stroke-width: 7; stroke-dasharray: 8.2 2.8; }
+.ring-leds-off { stroke: var(--led-off); }
+.ring-leds-on { stroke: var(--led); filter: drop-shadow(0 0 3px var(--led)); }
+.ring-arc { fill: none; stroke: #fff; stroke-width: 10; }
+.ring-button { fill: var(--c); stroke: #000; stroke-width: 2; transition: fill 0.1s; }
+.ring-glyph { fill: var(--glyph); stroke: var(--glyph); stroke-width: 2.4; stroke-linecap: round; }
+.track[data-state="play"] .ring-button, .track[data-state="rec"] .ring-button, .track[data-state="overdub"] .ring-button { filter: drop-shadow(0 0 6px var(--c)); }
 
+/* Like the looper's STATUS indicator: dark when empty, lit when a phrase is waiting,
+   blinking while recording, loop position while playing. */
+.track[data-state="empty"] .ring-leds-on { display: none; }
+.track[data-state="stop"] .ring-leds-on { opacity: 0.55; }
+.track[data-state="rec"] .ring-leds-on { animation: recpulse 0.5s steps(2, jump-none) infinite; }
+@keyframes recpulse { 50% { opacity: 0.15; } }
+
+.track .num { position: absolute; top: -4px; left: -2px; color: #fff; font: 800 15px/1 -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif; text-shadow: 0 1px 2px #000; }
 .track .label {
-  text-align: center; margin-top: 6px; color: var(--c);
-  font: 700 13px/1 -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif; letter-spacing: 0.12em; text-transform: uppercase;
+  text-align: center; margin-top: 6px; color: #d7d9dd;
+  font: 700 12px/1 -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif; letter-spacing: 0.12em; text-transform: uppercase;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
 }
-.track[data-state="empty"] .label { color: #6b7280; }
+.track[data-state="play"] .label { color: var(--play); }
+.track[data-state="rec"] .label { color: var(--rec); }
+.track[data-state="overdub"] .label { color: var(--dub); }
+.track[data-state="empty"] .label { color: #6b6e75; }
 
 .track.hit .ring { animation: hit 0.35s ease-out; }
-@keyframes hit { 0% { transform: scale(1.18); filter: brightness(1.8); } 100% { transform: scale(1); filter: none; } }
+@keyframes hit { 0% { transform: scale(1.16); filter: brightness(1.7); } 100% { transform: scale(1); filter: none; } }

@@ -5,7 +5,8 @@
 <title>RC-505 Overlay</title>
 <link rel="stylesheet" href="ring.css">
 <style>
-  /* Transparent page for an OBS browser source. Options: ?scale=1.5  ?pos=top|bottom  ?align=left|center|right */
+  /* Transparent page for an OBS browser source.
+     Options: ?style=outline  ?scale=1.5  ?pos=top|bottom  ?align=left|center|right */
   html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
   body { display: flex; font-family: -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif; color: #fff; }
   #dock { margin: auto auto 28px; transform-origin: bottom center; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: opacity 0.4s; }
@@ -15,24 +16,41 @@
   body.offline #dock { opacity: 0.35; }
 
   #toast {
-    min-height: 30px; padding: 6px 16px; border-radius: 999px; background: rgba(10, 12, 16, 0.85);
+    min-height: 30px; padding: 6px 16px; border-radius: 6px; background: var(--body); border: 1px solid #2a2b2f; border-left: 4px solid var(--strip);
     font-weight: 700; font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase;
     opacity: 0; transform: translateY(8px); transition: opacity 0.25s, transform 0.25s; box-sizing: border-box;
   }
   #toast.show { opacity: 1; transform: none; }
   #toast .src { opacity: 0.55; font-weight: 600; margin-left: 8px; font-size: 11px; }
 
-  #panel { display: flex; align-items: center; gap: 18px; padding: 14px 20px; border-radius: 22px; background: rgba(10, 12, 16, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); }
+  #panel { display: flex; align-items: center; gap: 18px; padding: 16px 20px 14px; border-radius: 14px; background: linear-gradient(#1a1a1d, var(--body) 55%); border: 1px solid #2a2b2f; border-top: 4px solid var(--strip); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55); }
   #tracks { display: flex; gap: 14px; }
   .track { width: 78px; }
-  #info { min-width: 120px; padding-right: 6px; border-right: 1px solid rgba(255, 255, 255, 0.12); margin-right: 2px; }
-  #mem-num { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; opacity: 0.6; }
-  #mem-name { font-size: 18px; font-weight: 700; white-space: nowrap; margin: 2px 0 8px; min-height: 22px; }
-  #tempo { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  #info { min-width: 132px; padding: 8px 10px; border-radius: 4px; background: var(--lcd); color: var(--lcd-text); box-shadow: inset 0 0 12px rgba(0, 20, 80, 0.7); font-family: ui-monospace, Menlo, monospace; }
+  #mem-num { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; opacity: 0.8; }
+  #mem-name { font-size: 15px; font-weight: 700; white-space: pre; margin: 2px 0 6px; min-height: 19px; }
+  #tempo { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
   #beat { width: 10px; height: 10px; border-radius: 50%; background: #fff; opacity: 0.2; }
   #beat.on { animation: beat 0.22s ease-out; }
-  #beat.on.one { background: var(--rec); }
+  #beat.on.one { background: #ffd9d6; box-shadow: 0 0 6px #fff; }
   @keyframes beat { 0% { opacity: 1; transform: scale(1.6); } 100% { opacity: 0.2; transform: scale(1); } }
+
+  /* ?style=outline: nothing is filled, so the video behind shows through. Every part is
+     drawn as an outline in its state colour; only the lit LED segments stay solid. */
+  body[data-style="outline"] #panel { background: none; box-shadow: none; border: 1.5px solid rgba(255, 255, 255, 0.55); border-top: 3px solid var(--strip); }
+  body[data-style="outline"] #info { background: none; box-shadow: none; border: 1.5px solid var(--lcd); text-shadow: 0 1px 2px #000, 0 0 6px rgba(0, 0, 0, 0.9); }
+  body[data-style="outline"] #toast { background: none; border: 1.5px solid rgba(255, 255, 255, 0.55); border-left: 4px solid var(--strip); text-shadow: 0 1px 2px #000, 0 0 6px rgba(0, 0, 0, 0.9); }
+  body[data-style="outline"] .track { --line: rgba(255, 255, 255, 0.5); }
+  body[data-style="outline"] .track[data-state="stop"] { --line: #f2f2f4; }
+  body[data-style="outline"] .track[data-state="play"] { --line: var(--play); }
+  body[data-style="outline"] .track[data-state="rec"] { --line: var(--rec); }
+  body[data-style="outline"] .track[data-state="overdub"] { --line: var(--dub); }
+  body[data-style="outline"] .ring { filter: drop-shadow(0 0 1.5px rgba(0, 0, 0, 0.9)); }
+  body[data-style="outline"] .ring-body { fill: none; stroke: rgba(255, 255, 255, 0.45); }
+  body[data-style="outline"] .ring-leds-off { stroke: rgba(255, 70, 50, 0.22); }
+  body[data-style="outline"] .ring-button { fill: none; stroke: var(--line); stroke-width: 3; filter: none; }
+  body[data-style="outline"] .ring-glyph { fill: none; stroke: var(--line); stroke-width: 2.2; stroke-linejoin: round; }
+  body[data-style="outline"] .track .label, body[data-style="outline"] .track .num { text-shadow: 0 1px 2px #000, 0 0 6px rgba(0, 0, 0, 0.9); }
 </style>
 </head>
 <body class="offline">
@@ -52,11 +70,12 @@
   const q = new URLSearchParams(location.search);
   document.body.dataset.pos = q.get('pos') || 'bottom';
   document.body.dataset.align = q.get('align') || 'center';
+  document.body.dataset.style = q.get('style') === 'outline' ? 'outline' : 'solid';
   document.getElementById('dock').style.transform = `scale(${Number(q.get('scale')) || 1})`;
 
   const LABEL = { empty: 'Empty', stop: 'Stopped', play: 'Play', rec: 'Rec', overdub: 'Dub' };
   const tracksEl = document.getElementById('tracks');
-  tracksEl.innerHTML = [1, 2, 3, 4, 5].map((n) => `<div class="track" data-state="empty">${RCRing.svg(n)}<div class="label">Empty</div></div>`).join('');
+  tracksEl.innerHTML = [1, 2, 3, 4, 5].map((n) => `<div class="track" data-state="empty"><span class="num">${n}</span>${RCRing.svg(n)}<div class="label">Empty</div></div>`).join('');
   const els = [...tracksEl.children];
   const arcs = els.map((el) => el.querySelector('.ring-arc'));
   let state = null;

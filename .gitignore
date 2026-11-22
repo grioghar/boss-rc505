@@ -5,3 +5,6 @@ device-backup/
 data/
 .claude/
 .DS_Store
+.build/
+dist/
+.signing.env

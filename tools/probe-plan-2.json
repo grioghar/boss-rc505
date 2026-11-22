@@ -1,0 +1,22 @@
+{
+  "comment": "Round 2 on memory 94: candidate final layout in slots 4-16, plus three variants of TARGET TRACK INC/DEC (id 76, read from the device) in the pedal slots 1-3, which are restored afterwards.",
+  "memories": [94],
+  "assigns": {
+    "1":  { "src": 38, "tgt": 76, "min": 0, "max": 1, "note": "CC#23 -> target track inc/dec, range 0..1" },
+    "2":  { "src": 39, "tgt": 76, "min": 1, "max": 0, "note": "CC#24 -> range 1..0" },
+    "3":  { "src": 40, "tgt": 76, "min": 1, "max": 1, "note": "CC#25 -> range 1..1" },
+    "4":  { "src": 5,  "tgt": 80, "min": 0, "max": 127 },
+    "5":  { "src": 6,  "tgt": 81, "min": 0, "max": 127 },
+    "6":  { "src": 7,  "tgt": 82, "min": 0, "max": 127 },
+    "7":  { "src": 8,  "tgt": 83, "min": 0, "max": 127 },
+    "8":  { "src": 9,  "tgt": 84, "min": 0, "max": 127 },
+    "9":  { "src": 10, "tgt": 85, "min": 0, "max": 127 },
+    "10": { "src": 11, "tgt": 86, "min": 0, "max": 127 },
+    "11": { "src": 12, "tgt": 87, "min": 0, "max": 127 },
+    "12": { "src": 13, "tgt": 88, "min": 0, "max": 127 },
+    "13": { "src": 14, "tgt": 89, "min": 0, "max": 127 },
+    "14": { "src": 35, "tgt": 76, "min": 0, "max": 0, "note": "CC#20 -> target track inc/dec as the device wrote it" },
+    "15": { "src": 36, "tgt": 30, "note": "CC#21 -> TGT TR REC/PLAY" },
+    "16": { "src": 37, "tgt": 31, "note": "CC#22 -> TGT TR STOP" }
+  }
+}
