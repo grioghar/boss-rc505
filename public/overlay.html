@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>RC-505 Overlay</title>
+<link rel="stylesheet" href="ring.css">
+<style>
+  /* Transparent page for an OBS browser source. Options: ?scale=1.5  ?pos=top|bottom  ?align=left|center|right */
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+  body { display: flex; font-family: -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif; color: #fff; }
+  #dock { margin: auto auto 28px; transform-origin: bottom center; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: opacity 0.4s; }
+  body[data-pos="top"] #dock { margin: 28px auto auto; transform-origin: top center; flex-direction: column-reverse; }
+  body[data-align="left"] #dock { margin-left: 28px; transform-origin: bottom left; align-items: flex-start; }
+  body[data-align="right"] #dock { margin-right: 28px; transform-origin: bottom right; align-items: flex-end; }
+  body.offline #dock { opacity: 0.35; }
+
+  #toast {
+    min-height: 30px; padding: 6px 16px; border-radius: 999px; background: rgba(10, 12, 16, 0.85);
+    font-weight: 700; font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase;
+    opacity: 0; transform: translateY(8px); transition: opacity 0.25s, transform 0.25s; box-sizing: border-box;
+  }
+  #toast.show { opacity: 1; transform: none; }
+  #toast .src { opacity: 0.55; font-weight: 600; margin-left: 8px; font-size: 11px; }
+
+  #panel { display: flex; align-items: center; gap: 18px; padding: 14px 20px; border-radius: 22px; background: rgba(10, 12, 16, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); }
+  #tracks { display: flex; gap: 14px; }
+  .track { width: 78px; }
+  #info { min-width: 120px; padding-right: 6px; border-right: 1px solid rgba(255, 255, 255, 0.12); margin-right: 2px; }
+  #mem-num { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; opacity: 0.6; }
+  #mem-name { font-size: 18px; font-weight: 700; white-space: nowrap; margin: 2px 0 8px; min-height: 22px; }
+  #tempo { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  #beat { width: 10px; height: 10px; border-radius: 50%; background: #fff; opacity: 0.2; }
+  #beat.on { animation: beat 0.22s ease-out; }
+  #beat.on.one { background: var(--rec); }
+  @keyframes beat { 0% { opacity: 1; transform: scale(1.6); } 100% { opacity: 0.2; transform: scale(1); } }
+</style>
+</head>
+<body class="offline">
+<div id="dock">
+  <div id="toast"></div>
+  <div id="panel">
+    <div id="info">
+      <div id="mem-num">MEMORY --</div>
+      <div id="mem-name"></div>
+      <div id="tempo"><span id="beat"></span><span id="bpm">--</span></div>
+    </div>
+    <div id="tracks"></div>
+  </div>
+</div>
+<script src="client.js"></script>
+<script>
+  const q = new URLSearchParams(location.search);
+  document.body.dataset.pos = q.get('pos') || 'bottom';
+  document.body.dataset.align = q.get('align') || 'center';
+  document.getElementById('dock').style.transform = `scale(${Number(q.get('scale')) || 1})`;
+
+  const LABEL = { empty: 'Empty', stop: 'Stopped', play: 'Play', rec: 'Rec', overdub: 'Dub' };
+  const tracksEl = document.getElementById('tracks');
+  tracksEl.innerHTML = [1, 2, 3, 4, 5].map((n) => `<div class="track" data-state="empty">${RCRing.svg(n)}<div class="label">Empty</div></div>`).join('');
+  const els = [...tracksEl.children];
+  const arcs = els.map((el) => el.querySelector('.ring-arc'));
+  let state = null;
+
+  RC.on('link', (up) => { if (!up) document.body.classList.add('offline'); });
+  RC.on('state', (s) => {
+    state = s;
+    document.body.classList.toggle('offline', !s.connected);
+    document.getElementById('mem-num').textContent = `MEMORY ${String(s.memory.number).padStart(2, '0')}`;
+    document.getElementById('mem-name').textContent = s.memory.name;
+    const bpm = s.tempo ?? s.snapshotTempo;
+    document.getElementById('bpm').textContent = bpm ? `${bpm.toFixed(1)} BPM` : '--';
+    s.tracks.forEach((t, i) => { els[i].dataset.state = t.state; els[i].querySelector('.label').textContent = LABEL[t.state]; });
+  });
+
+  function flash(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+  let toastTimer;
+  RC.on('press', (p) => {
+    const m = p.id.match(/^t([1-5])\./);
+    if (m) flash(els[m[1] - 1], 'hit');
+    const toast = document.getElementById('toast');
+    toast.innerHTML = '';
+    toast.append(p.label);
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 1400);
+  });
+  RC.on('beat', (b) => { const el = document.getElementById('beat'); el.classList.toggle('one', b.n === 0); flash(el, 'on'); });
+
+  (function frame() {
+    if (state) {
+      const now = RC.serverNow();
+      state.tracks.forEach((t, i) => {
+        const p = RCRing.progress(t, now);
+        arcs[i].style.strokeDasharray = p === null ? 'none' : `${p * RCRing.C} ${RCRing.C}`;
+      });
+    }
+    requestAnimationFrame(frame);
+  })();
+</script>
+</body>
+</html>

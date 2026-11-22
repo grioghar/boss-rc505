@@ -1,0 +1,19 @@
+{
+  "comment": "Probe on empty memory 94 to confirm the numeric ids of ASSIGN sources/targets. Ids are inferred from the manual's list order and this unit's existing settings; the probe shows what each one really does.",
+  "memories": [94],
+  "assigns": {
+    "4":  { "src": 5,  "tgt": 80,  "min": 0, "max": 127, "note": "TR1 REC/DUB button -> CC#1 out (expected)" },
+    "5":  { "src": 10, "tgt": 81,  "min": 0, "max": 127, "note": "TR1 PLAY/STOP button -> CC#2 out" },
+    "6":  { "src": 6,  "tgt": 111, "min": 0, "max": 127, "note": "TR2 REC/DUB button -> CC#64 out" },
+    "7":  { "src": 11, "tgt": 112, "min": 0, "max": 127, "note": "TR2 PLAY/STOP button -> CC#65 out" },
+    "8":  { "src": 3,  "tgt": 82,  "min": 0, "max": 127, "note": "INPUT FX knob -> CC#3 out" },
+    "9":  { "src": 16, "tgt": 2,   "note": "CC#1 in -> TR3 REC/PLAY" },
+    "10": { "src": 17, "tgt": 7,   "note": "CC#2 in -> TR3 PLAY/STOP" },
+    "11": { "src": 7,  "tgt": 83,  "min": 0, "max": 127, "note": "TR3 REC/DUB -> CC#4 out (does a MIDI-triggered record report too?)" },
+    "12": { "src": 12, "tgt": 84,  "min": 0, "max": 127, "note": "TR3 PLAY/STOP -> CC#5 out" },
+    "13": { "src": 47, "tgt": 12,  "note": "CC#64 in -> TR3 CLEAR" },
+    "14": { "src": 18, "tgt": 35,  "note": "CC#3 in -> ALL START/STOP" },
+    "15": { "src": 19, "tgt": 37,  "note": "CC#4 in -> UNDO/REDO" },
+    "16": { "src": 15, "tgt": 35,  "note": "MIDI Start/Stop in -> ALL START/STOP" }
+  }
+}

@@ -1,0 +1,7 @@
+node_modules/
+# Copyrighted Roland manuals, personal device backups and derived data stay local
+docs/
+device-backup/
+data/
+.claude/
+.DS_Store

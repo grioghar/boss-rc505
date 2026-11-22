@@ -1,0 +1,22 @@
+{
+  "httpPort": 5055,
+  "midiPortMatch": "RC-505",
+  "midiChannel": 1,
+  "tapMs": 60,
+  "clearHoldMs": 2200,
+  "actions": {
+    "t1.recplay": { "cc": 80, "label": "Track 1 Rec/Play" },
+    "t2.recplay": { "cc": 81, "label": "Track 2 Rec/Play" },
+    "t3.recplay": { "cc": 82, "label": "Track 3 Rec/Play" },
+    "t4.recplay": { "cc": 83, "label": "Track 4 Rec/Play" },
+    "t5.recplay": { "cc": 84, "label": "Track 5 Rec/Play" },
+    "t1.stop": { "cc": 85, "label": "Track 1 Stop" },
+    "t2.stop": { "cc": 86, "label": "Track 2 Stop" },
+    "t3.stop": { "cc": 87, "label": "Track 3 Stop" },
+    "t4.stop": { "cc": 88, "label": "Track 4 Stop" },
+    "t5.stop": { "cc": 89, "label": "Track 5 Stop" },
+    "all": { "cc": 90, "label": "All Start/Stop" },
+    "undo": { "cc": 91, "label": "Undo/Redo" },
+    "tap": { "cc": 92, "label": "Tap Tempo" }
+  }
+}

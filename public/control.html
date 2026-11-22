@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RC-505 Control</title>
+<link rel="stylesheet" href="ring.css">
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #0d0f13; color: #e8eaee; font: 14px/1.4 -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 20px 16px 40px; }
+  header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+  h1 { font-size: 18px; margin: 0; }
+  #status { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #3a1f1f; color: #ff8a80; }
+  #status.ok { background: #153222; color: #6ee7a0; }
+  #tempo { margin-left: auto; font-variant-numeric: tabular-nums; opacity: 0.8; }
+  button, select { font: inherit; color: inherit; background: #1b1f27; border: 1px solid #2c323d; border-radius: 10px; padding: 9px 12px; cursor: pointer; }
+  button:hover { background: #232832; }
+  button:active { transform: translateY(1px); }
+  button:focus-visible, select:focus-visible { outline: 2px solid #6aa8ff; outline-offset: 2px; }
+  kbd { font: 11px ui-monospace, Menlo, monospace; opacity: 0.55; margin-left: 6px; }
+
+  #memory { display: flex; gap: 8px; align-items: center; margin-bottom: 18px; }
+  #memory select { flex: 1; min-width: 0; }
+
+  #tracks { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .track { background: #13161c; border: 1px solid #222731; border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .track .ringbtn { background: none; border: none; padding: 0; border-radius: 50%; }
+  .track .ringbtn:hover { background: none; filter: brightness(1.2); }
+  .track .label { margin: 0; }
+  .track .row { display: flex; gap: 6px; }
+  .track .row button { flex: 1; padding: 7px 4px; font-size: 12px; }
+  .track select { font-size: 11px; padding: 4px 6px; opacity: 0.6; }
+
+  #global { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  #global button { flex: 1; min-width: 130px; padding: 14px; font-weight: 600; }
+  #all { background: #1d3a2a; border-color: #2c5a40; }
+  p.note { opacity: 0.55; font-size: 12px; margin-top: 18px; }
+  @media (max-width: 620px) { #tracks { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>RC-505</h1>
+    <span id="status">Not connected</span>
+    <span id="tempo"></span>
+  </header>
+
+  <div id="memory">
+    <button id="mem-prev" aria-label="Previous memory">◀</button>
+    <select id="mem-select" aria-label="Memory"></select>
+    <button id="mem-next" aria-label="Next memory">▶</button>
+  </div>
+
+  <div id="tracks"></div>
+
+  <div id="global">
+    <button id="all" data-press="all">All Start/Stop<kbd>Space</kbd></button>
+    <button data-press="undo">Undo/Redo<kbd>Z</kbd></button>
+    <button data-press="tap">Tap Tempo<kbd>T</kbd></button>
+  </div>
+
+  <p class="note">
+    Keys: <b>1–5</b> rec/play/overdub, <b>Shift+1–5</b> stop, <b>Space</b> all start/stop.
+    The looper doesn't report per-track status, so the rings follow the commands sent from here; if you press a track button on the looper itself, use the small menu under a track to correct it.
+  </p>
+</main>
+<script src="client.js"></script>
+<script>
+  const LABEL = { empty: 'Empty', stop: 'Stopped', play: 'Play', rec: 'Rec', overdub: 'Overdub' };
+  const tracksEl = document.getElementById('tracks');
+  tracksEl.innerHTML = [1, 2, 3, 4, 5].map((n) => `
+    <div class="track" data-state="empty">
+      <button class="ringbtn" data-press="t${n}.recplay" aria-label="Track ${n} rec/play">${RCRing.svg(n)}</button>
+      <div class="label">Empty</div>
+      <div class="row">
+        <button data-press="t${n}.stop">Stop</button>
+        <button data-press="t${n}.clear">Clear</button>
+      </div>
+      <select data-fix="${n - 1}" aria-label="Correct track ${n} status">
+        <option value="">Correct status…</option>
+        ${Object.entries(LABEL).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+      </select>
+    </div>`).join('');
+  const els = [...tracksEl.children];
+  const arcs = els.map((el) => el.querySelector('.ring-arc'));
+  const memSelect = document.getElementById('mem-select');
+  let state = null;
+
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-press]');
+    if (!b) return;
+    if (b.dataset.press.endsWith('.clear') && !confirm(`Clear track ${b.dataset.press[1]}? This erases its loop on the looper.`)) return;
+    RC.press(b.dataset.press);
+  });
+  document.addEventListener('change', (e) => {
+    const s = e.target.closest('[data-fix]');
+    if (s && s.value) { RC.send({ type: 'setTrack', track: Number(s.dataset.fix), state: s.value }); s.value = ''; }
+  });
+  memSelect.addEventListener('change', () => RC.send({ type: 'memory', number: Number(memSelect.value) }));
+  const step = (d) => state && RC.send({ type: 'memory', number: ((state.memory.number - 1 + d + 99) % 99) + 1 });
+  document.getElementById('mem-prev').onclick = () => step(-1);
+  document.getElementById('mem-next').onclick = () => step(1);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.repeat || e.metaKey || e.ctrlKey || e.altKey || e.target.matches('select, input')) return;
+    const digit = e.code.match(/^Digit([1-5])$/);
+    if (digit) RC.press(`t${digit[1]}.${e.shiftKey ? 'stop' : 'recplay'}`);
+    else if (e.code === 'Space') { e.preventDefault(); RC.press('all'); }
+    else if (e.code === 'KeyZ') RC.press('undo');
+    else if (e.code === 'KeyT') RC.press('tap');
+  });
+
+  let namesLoaded = false;
+  async function loadNames() {
+    let names = {};
+    try { const r = await fetch('/memories.json'); if (r.ok) names = Object.fromEntries((await r.json()).map((m) => [m.number, m.name])); } catch {}
+    memSelect.innerHTML = Array.from({ length: 99 }, (_, i) => `<option value="${i + 1}"></option>`).join('');
+    [...memSelect.options].forEach((o, i) => { o.textContent = `${String(i + 1).padStart(2, '0')}  ${names[i + 1] || ''}`; });
+    namesLoaded = true;
+    if (state) memSelect.value = state.memory.number;
+  }
+  loadNames();
+
+  RC.on('link', (up) => { if (!up) { const s = document.getElementById('status'); s.textContent = 'Bridge not running'; s.className = ''; } });
+  RC.on('state', (s) => {
+    state = s;
+    const st = document.getElementById('status');
+    st.textContent = s.connected ? `Connected: ${s.portName}` : 'Looper not found (is it in USB storage mode?)';
+    st.className = s.connected ? 'ok' : '';
+    const bpm = s.tempo ?? s.snapshotTempo;
+    document.getElementById('tempo').textContent = bpm ? `${bpm.toFixed(1)} BPM${s.tempo ? '' : ' (saved)'}` : '';
+    if (namesLoaded) memSelect.value = s.memory.number;
+    s.tracks.forEach((t, i) => { els[i].dataset.state = t.state; els[i].querySelector('.label').textContent = LABEL[t.state]; });
+  });
+  RC.on('press', (p) => {
+    const m = p.id.match(/^t([1-5])\./);
+    if (m) { const el = els[m[1] - 1]; el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit'); }
+  });
+
+  (function frame() {
+    if (state) {
+      const now = RC.serverNow();
+      state.tracks.forEach((t, i) => {
+        const p = RCRing.progress(t, now);
+        arcs[i].style.strokeDasharray = p === null ? 'none' : `${p * RCRing.C} ${RCRing.C}`;
+      });
+    }
+    requestAnimationFrame(frame);
+  })();
+</script>
+</body>
+</html>

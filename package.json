@@ -1,0 +1,16 @@
+{
+  "name": "boss-rc505",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Control a Boss RC-505 Loop Station over USB MIDI and mirror it in an OBS overlay",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "snapshot": "node tools/snapshot.js"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "@julusian/midi": "^3.9.0",
+    "ws": "^8.23.0"
+  }
+}

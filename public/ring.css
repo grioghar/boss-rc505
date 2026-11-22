@@ -1,0 +1,31 @@
+:root {
+  --rec: #ff3b30;
+  --play: #30d158;
+  --dub: #ffd60a;
+  --idle: #5b6470;
+  --empty: #2a2f37;
+}
+.track { --c: var(--empty); position: relative; }
+.track[data-state="stop"] { --c: var(--idle); }
+.track[data-state="play"] { --c: var(--play); }
+.track[data-state="rec"] { --c: var(--rec); }
+.track[data-state="overdub"] { --c: var(--dub); }
+
+.ring { width: 100%; display: block; overflow: visible; }
+.ring-base { fill: rgba(10, 12, 16, 0.78); stroke: var(--c); stroke-width: 7; opacity: 0.45; transition: stroke 0.12s; }
+.ring-arc { fill: none; stroke: var(--c); stroke-width: 7; stroke-linecap: round; filter: drop-shadow(0 0 5px var(--c)); transition: stroke 0.12s; }
+.ring-num { fill: #fff; font: 700 30px/1 -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif; text-anchor: middle; dominant-baseline: central; }
+.track[data-state="empty"] .ring-arc { display: none; }
+.track[data-state="empty"] .ring-num { opacity: 0.4; }
+.track[data-state="rec"] .ring-arc { animation: recpulse 0.9s ease-in-out infinite; }
+@keyframes recpulse { 50% { opacity: 0.35; } }
+
+.track .label {
+  text-align: center; margin-top: 6px; color: var(--c);
+  font: 700 13px/1 -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif; letter-spacing: 0.12em; text-transform: uppercase;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+.track[data-state="empty"] .label { color: #6b7280; }
+
+.track.hit .ring { animation: hit 0.35s ease-out; }
+@keyframes hit { 0% { transform: scale(1.18); filter: brightness(1.8); } 100% { transform: scale(1); filter: none; } }
