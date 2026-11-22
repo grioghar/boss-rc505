@@ -50,3 +50,18 @@
 
 .track.hit .ring { animation: hit 0.35s ease-out; }
 @keyframes hit { 0% { transform: scale(1.16); filter: brightness(1.7); } 100% { transform: scale(1); filter: none; } }
+
+/* 16x2 character LCD: each cell is masked into a 5x7 grid of dots. */
+.lcd { display: inline-block; padding: 8px 10px; border-radius: 4px; background: var(--lcd); box-shadow: inset 0 0 14px rgba(0, 20, 90, 0.75), 0 0 0 2px #05060a; }
+.lcd-row { display: flex; gap: 2px; }
+.lcd-row + .lcd-row { margin-top: 4px; }
+.lcd-cell {
+  width: 11px; height: 17px; display: flex; align-items: center; justify-content: center; overflow: hidden;
+  background: rgba(255, 255, 255, 0.09); color: var(--lcd-text); font: 700 14.5px/1 ui-monospace, Menlo, Consolas, monospace;
+  -webkit-mask-image: radial-gradient(circle, #000 60%, transparent 68%); mask-image: radial-gradient(circle, #000 60%, transparent 68%);
+  -webkit-mask-size: 2.2px 2.43px; mask-size: 2.2px 2.43px;
+}
+.lcd-beat { animation: lcdbeat 0.2s ease-out; }
+.lcd-beat-one { animation: lcdbeat-one 0.25s ease-out; }
+@keyframes lcdbeat { 0% { background: rgba(255, 255, 255, 0.45); } }
+@keyframes lcdbeat-one { 0% { background: rgba(255, 255, 255, 0.95); } }

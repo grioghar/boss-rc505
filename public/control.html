@@ -13,7 +13,7 @@
   h1 { font-size: 18px; margin: 0; }
   #status { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #3a1f1f; color: #ff8a80; }
   #status.ok { background: #153222; color: #6ee7a0; }
-  #tempo { margin-left: auto; font-variant-numeric: tabular-nums; opacity: 0.8; }
+  #lcd { margin-left: auto; }
   button, select { font: inherit; color: inherit; background: #1b1f27; border: 1px solid #2c323d; border-radius: 10px; padding: 9px 12px; cursor: pointer; }
   button:hover { background: #232832; }
   button:active { transform: translateY(1px); }
@@ -46,7 +46,7 @@
   <header>
     <h1>RC-505</h1>
     <span id="status">Not connected</span>
-    <span id="tempo"></span>
+    <div id="lcd"></div>
   </header>
 
   <div id="memory">
@@ -87,6 +87,9 @@
   const els = [...tracksEl.children];
   const arcs = els.map((el) => el.querySelector('.ring-arc'));
   const memSelect = document.getElementById('mem-select');
+  const lcd = document.getElementById('lcd');
+  RCLcd.mount(lcd);
+  RC.on('beat', (b) => RCLcd.beat(lcd, b.n === 0));
   let state = null;
 
   document.addEventListener('click', (e) => {
@@ -127,8 +130,7 @@
     const st = document.getElementById('status');
     st.textContent = s.connected ? `Connected: ${s.portName}` : 'Looper not found (is it in USB storage mode?)';
     st.className = s.connected ? 'ok' : '';
-    const bpm = s.tempo ?? s.snapshotTempo;
-    document.getElementById('tempo').textContent = bpm ? `${bpm.toFixed(1)} BPM${s.tempo ? '' : ' (saved)'}` : '';
+    RCLcd.render(lcd, s);
     if (namesLoaded) memSelect.value = s.memory.number;
     s.tracks.forEach((t, i) => { els[i].dataset.state = t.state; els[i].querySelector('.label').textContent = LABEL[t.state]; });
   });

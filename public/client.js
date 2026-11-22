@@ -43,3 +43,34 @@ window.RCRing = {
     return ((now - track.since) % track.loopMs) / track.loopMs;
   },
 };
+
+// A look-alike of the looper's 16x2 character LCD. The looper never sends its screen, so
+// this is rebuilt from what the bridge knows: the Play screen's top line (memory number
+// and name) and, on the bottom line, tempo plus one status character per track.
+window.RCLcd = {
+  GLYPH: { empty: '-', stop: '\u25A0', play: '\u25B6', rec: '\u25CF', overdub: '\u25C6' },
+  mount(el) {
+    el.classList.add('lcd');
+    el.setAttribute('role', 'img');
+    el.innerHTML = [0, 1].map(() => `<div class="lcd-row">${'<span class="lcd-cell"></span>'.repeat(16)}</div>`).join('');
+    el.cells = [...el.querySelectorAll('.lcd-cell')];
+  },
+  lines(s) {
+    const top = `${String(s.memory.number).padStart(2, '0')} ${s.memory.name || ''}`;
+    const bpm = s.tempo ?? s.snapshotTempo;
+    const bottom = (bpm ? `\u2669=${bpm.toFixed(1)}` : '\u2669=---.-').padEnd(11) + s.tracks.map((t) => this.GLYPH[t.state] || '?').join('');
+    return [top, bottom].map((l) => l.padEnd(16).slice(0, 16));
+  },
+  render(el, s) {
+    const [top, bottom] = this.lines(s);
+    [...(top + bottom)].forEach((ch, i) => { if (el.cells[i].textContent !== ch) el.cells[i].textContent = ch; });
+    el.setAttribute('aria-label', `Memory ${s.memory.number} ${s.memory.name || ''}, tempo ${bottom.slice(2, 8).trim()}, tracks ${s.tracks.map((t) => t.state).join(', ')}`);
+  },
+  // Blink the note symbol on each beat, brighter on beat one.
+  beat(el, first) {
+    const cell = el.cells[16];
+    cell.classList.remove('lcd-beat', 'lcd-beat-one');
+    void cell.offsetWidth;
+    cell.classList.add(first ? 'lcd-beat-one' : 'lcd-beat');
+  },
+};
