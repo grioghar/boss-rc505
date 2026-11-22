@@ -56,7 +56,7 @@ Run it from the project folder, or pass `--root <folder>` (the folder holding `p
 | --- | --- | --- |
 | macOS 12+ | Xcode or the Swift toolchain; Roland RC-505 USB driver | Tested with the looper |
 | Linux | Swift toolchain, `libasound2-dev` | Builds and serves pages (`tools/linux-check.sh`); not yet tested with a looper attached |
-| Windows | Swift toolchain; Roland RC-505 USB driver | Written, not yet built or tested |
+| Windows | Swift toolchain (with VS Build Tools and the Windows SDK); Roland RC-505 USB driver | Builds and serves pages (Swift 6.4.2, before the bridge moved into `RC505Core`); not yet tested with a looper attached |
 
 `./build.sh` makes a release build in `dist/` and, on macOS, signs it with the identity in `CODESIGN_IDENTITY`.
 
