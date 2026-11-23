@@ -454,7 +454,8 @@ public final class Bridge {
         if path == "/memories.json" {
             return .json(200, memories.keys.sorted().map { ["number": $0, "name": memories[$0]?.name ?? ""] as [String: Any] })
         }
-        let relative = path == "/" ? "control.html" : path == "/overlay" ? "overlay.html" : String(path.dropFirst())
+        let pages = ["/": "control.html", "/overlay": "overlay.html", "/panel": "panel.html"]
+        let relative = pages[path] ?? String(path.dropFirst())
         guard !relative.contains(".."), !relative.contains("\\"), !relative.isEmpty else { return .notFound }
         let file = root.appendingPathComponent("public").appendingPathComponent(relative)
         var isDirectory: ObjCBool = false

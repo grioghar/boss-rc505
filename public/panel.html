@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>RC-505 Panel Overlay</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* OBS browser source: transparent page, a top-down drawing of the RC-505 that scales
+     to the source width. Drawn in the same style, and with the same options, as the
+     Sway overlay so the two sit together in one scene.
+     Options (combine with &):
+       style=outline   hardware drawn as outlines only, so video shows through
+       style=bold      like outline, with thick, fully opaque lines and heavier text
+       deck=tracks     only the five track strips and the display (shorter source)
+       demo=1          synthetic performance, for positioning the source
+       backdrop=%23102040   a colour behind the drawing that fades out at the edges
+                            (use 8 hex digits, e.g. %23102040cc, for a see-through one)
+       fade=40         how soft that edge is, 0-120 (default 40)
+       bg=%23202020    flat test colour for the whole page */
+  html, body { margin: 0; background: transparent; overflow: hidden; }
+  svg { display: block; width: 100vw; height: auto; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .body { fill: #0c0c0f; fill-opacity: .92; stroke: #2a2a31; stroke-width: 1.5; }
+  .panel { fill: #050507; stroke: #24242b; }
+  .well { fill: #15151a; stroke: #2b2b33; }
+  .glyph { fill: #6d6d79; }
+  .label { fill: #8b8b98; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+  .value { fill: #f2f2f5; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .title { fill: #f2f2f5; font-size: 22px; font-weight: 600; }
+  .sub { fill: #a6a6b3; font-size: 13px; }
+  .num { fill: #f2f2f5; font-size: 20px; font-weight: 700; }
+  .state { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+  .offline { fill: #ff6b6b; font-size: 13px; font-weight: 600; }
+  /* Outline style: no fills, light strokes, text keeps a dark edge so it reads over video. */
+  .outline .body { fill: none; stroke: #fff; stroke-opacity: .45; }
+  .outline .panel, .outline .well { fill: none; stroke: #fff; stroke-opacity: .6; stroke-width: 1.5; }
+  .outline .glyph { fill: #fff; fill-opacity: .7; }
+  .outline text { paint-order: stroke; stroke: #000; stroke-opacity: .6; stroke-width: 3px; }
+  .outline .label, .outline .sub { fill: #fff; fill-opacity: .85; }
+  /* Bold style: the outline style made to read from across a room or on a small stream window. */
+  .bold .body { stroke-opacity: 1; stroke-width: 5; }
+  .bold .panel, .bold .well { stroke-opacity: 1; stroke-width: 4; }
+  .bold .glyph { fill-opacity: 1; }
+  .bold text { font-weight: 700; stroke-opacity: .9; stroke-width: 5px; }
+  .bold .label { font-size: 13px; fill-opacity: 1; }
+  .bold .value { font-size: 16px; }
+  .bold .title { font-size: 26px; }
+  .bold .sub { font-size: 15px; fill-opacity: 1; }
+  .bold .num { font-size: 24px; }
+  .bold .state { font-size: 15px; }
+</style>
+</head>
+<body>
+<svg id="stage" viewBox="0 0 1280 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Live view of the RC-505 looper"></svg>
+<script src="client.js"></script>
+<script>
+const query = new URLSearchParams(location.search);
+if (query.get('bg')) document.body.style.background = query.get('bg');
+const bold = query.get('style') === 'bold';
+const outline = bold || query.get('style') === 'outline';
+const tracksOnly = query.get('deck') === 'tracks';
+const SW = bold ? 2.4 : 1; // line-weight multiplier for strokes set in code
+const LED_OFF = outline ? 'none' : '#2a0c0a';
+const COLOR = { rec: '#ff2a1c', play: '#1fd65a', overdub: '#ffae00', led: '#ff2416' };
+const STATE_TEXT = { empty: 'Empty', stop: 'Stopped', play: 'Play', rec: 'Rec', overdub: 'Overdub' };
+const stage = document.getElementById('stage');
+const NS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs = {}, parent = stage, text) => {
+  const node = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  if (text != null) node.textContent = text;
+  parent.appendChild(node);
+  return node;
+};
+if (tracksOnly) stage.setAttribute('viewBox', '0 196 1280 304');
+if (outline) stage.classList.add('outline');
+if (bold) stage.classList.add('bold');
+
+// Optional backdrop: a soft-edged block of colour behind everything, so the drawing stays
+// readable over busy video without a hard rectangle.
+if (query.get('backdrop')) {
+  const [vx, vy, vw, vh] = stage.getAttribute('viewBox').split(' ').map(Number);
+  const fade = Math.max(0, Math.min(120, Number(query.get('fade') ?? 40)));
+  const inset = fade * 0.5 + 4;
+  const defs = el('defs');
+  const filter = el('filter', { id: 'soft', x: '-20%', y: '-40%', width: '140%', height: '180%' }, defs);
+  el('feGaussianBlur', { stdDeviation: fade / 2 }, filter);
+  el('rect', { x: vx + inset, y: vy + inset, width: vw - 2 * inset, height: vh - 2 * inset, rx: 40,
+               fill: query.get('backdrop'), filter: fade ? 'url(#soft)' : 'none' });
+}
+
+// ---------- geometry ----------
+const DISPLAY = tracksOnly ? { x: 0, y: 0, w: 0, h: 0 } : { x: 470, y: 44, w: 340, h: 124 };
+const STRIP_W = 236, STRIP_X = 50;
+const RING = { cy: 404, r: 56, button: 37, segments: 24 };
+
+// ---------- static drawing ----------
+el('rect', { class: 'body', x: 20, y: tracksOnly ? 206 : 20, width: 1240, height: tracksOnly ? 280 : 466, rx: 22 });
+
+// A glow is a coloured copy of a control laid over it; its opacity is driven from the state.
+const glowOf = (shape, attrs, color) => el(shape, { ...attrs, fill: color, opacity: 0 });
+const knob = (x, y, r, angle) => {
+  const g = el('g', { transform: `translate(${x} ${y})` });
+  el('circle', { class: 'well', r }, g);
+  el('line', { x1: 0, y1: -r * 0.3, x2: 0, y2: -r * 0.78, stroke: '#e9e9ee', 'stroke-width': 2.5 * (bold ? 1.6 : 1), 'stroke-linecap': 'round', transform: `rotate(${angle})` }, g);
+};
+
+let beatDots = [], title, sub, other, allGlow, memoryGlow;
+if (!tracksOnly) {
+  // Left: input levels and INPUT FX. Right: memory/system keys and TRACK FX.
+  knob(88, 96, 32, -40);
+  el('text', { class: 'label', x: 88, y: 152, 'text-anchor': 'middle' }, stage, 'Input FX');
+  [0, 1, 2].forEach((i) => el('rect', { class: 'well', x: 142 + i * 44, y: 126, width: 36, height: 24, rx: 6 }));
+  [0, 1, 2, 3].forEach((i) => knob(160 + i * 62, 78, 14, [-60, 20, -20, 50][i]));
+  [0, 1, 2].forEach((i) => el('rect', { class: 'well', x: 290 + i * 44, y: 126, width: 36, height: 24, rx: 6 }));
+
+  knob(1192, 96, 32, 35);
+  el('text', { class: 'label', x: 1192, y: 152, 'text-anchor': 'middle' }, stage, 'Track FX');
+  [0, 1, 2].forEach((i) => el('rect', { class: 'well', x: 1014 + i * 44, y: 126, width: 36, height: 24, rx: 6 }));
+  [0, 1].forEach((row) => [0, 1, 2].forEach((col) => el('rect', { class: 'well', x: 924 + col * 40, y: 58 + row * 30, width: 32, height: 20, rx: 5 })));
+  const memKnob = { cx: 868, cy: 84, r: 24 };
+  el('circle', { class: 'well', ...memKnob });
+  memoryGlow = glowOf('circle', memKnob, '#ffffff');
+
+  // Display: the looper's screen, with a beat counter in place of the Sway's preset dots.
+  el('rect', { class: 'panel', x: DISPLAY.x, y: DISPLAY.y, width: DISPLAY.w, height: DISPLAY.h, rx: 10 });
+  beatDots = [0, 1, 2, 3].map((i) => {
+    const at = { cx: DISPLAY.x + 24 + i * 32, cy: DISPLAY.y + 22, r: 9 };
+    el('circle', { class: 'well', ...at });
+    return glowOf('circle', at, i === 0 ? COLOR.led : '#ffffff');
+  });
+  title = el('text', { class: 'title', x: DISPLAY.x + 16, y: DISPLAY.y + 68 }, stage, '');
+  sub = el('text', { class: 'sub', x: DISPLAY.x + 16, y: DISPLAY.y + 90 }, stage, '');
+  other = el('text', { class: 'sub', x: DISPLAY.x + 16, y: DISPLAY.y + 112 }, stage, '');
+
+  // ALL START/STOP sits under the display.
+  const all = { x: 580, y: 176, width: 120, height: 22, rx: 11 };
+  el('rect', { class: 'well', ...all });
+  allGlow = glowOf('rect', all, '#ffffff');
+  el('line', { x1: 44, y1: 208, x2: 1236, y2: 208, stroke: outline ? '#fff' : '#2a2a31', 'stroke-opacity': outline ? (bold ? 1 : .45) : 1, 'stroke-width': bold ? 3 : 1.2 });
+}
+const offline = el('text', { class: 'offline', x: 640, y: tracksOnly ? 222 : 38, 'text-anchor': 'middle' }, stage, '');
+
+// Five track strips: number, EDIT key, fader, stop key, and the loop ring around the rec/play button.
+const tracks = [0, 1, 2, 3, 4].map((i) => {
+  const x0 = STRIP_X + i * STRIP_W;
+  const cx = x0 + STRIP_W / 2;
+  el('text', { class: 'num', x: x0 + 22, y: 250 }, stage, String(i + 1));
+  el('rect', { class: 'well', x: x0 + 52, y: 232, width: 48, height: 20, rx: 10 }); // EDIT
+  el('rect', { class: 'well', x: x0 + 176, y: 228, width: 20, height: 92, rx: 6 }); // fader slot
+  el('rect', { class: 'well', x: x0 + 168, y: 262, width: 36, height: 18, rx: 4 });  // fader cap
+  const stopAt = { x: x0 + 52, y: 268, width: 48, height: 48, rx: 9 };
+  el('rect', { class: 'well', ...stopAt });
+  const stopGlow = glowOf('rect', stopAt, '#ffffff');
+  el('rect', { class: 'glyph', x: x0 + 68, y: 284, width: 16, height: 16, rx: 2 });
+
+  const ring = el('g', { transform: `translate(${cx} ${RING.cy})` });
+  const leds = Array.from({ length: RING.segments }, (_, n) => el('rect', {
+    x: -5.5, y: -RING.r - 6, width: 11, height: 12, rx: 2, transform: `rotate(${(n + 0.5) * 360 / RING.segments})`,
+    fill: LED_OFF, stroke: outline ? '#fff' : 'none', 'stroke-opacity': bold ? .8 : .35, 'stroke-width': bold ? 1.5 : .75 }, ring));
+  el('circle', { class: 'well', r: RING.button }, ring);
+  const glow = glowOf('circle', { r: RING.button }, COLOR.play);
+  ring.appendChild(glow);
+  const flash = glowOf('circle', { r: RING.button }, '#ffffff');
+  ring.appendChild(flash);
+  el('path', { class: 'glyph', d: 'M-17 -11 L-2 0 L-17 11 Z M14 0 m-7 0 a7 7 0 1 0 14 0 a7 7 0 1 0 -14 0' }, ring);
+  el('line', { x1: 1, y1: 12, x2: 7, y2: -12, stroke: outline ? '#fff' : '#6d6d79', 'stroke-opacity': outline ? .7 : 1, 'stroke-width': 2 * SW, 'stroke-linecap': 'round' }, ring);
+  const stateText = el('text', { class: 'state', x: cx, y: 336, 'text-anchor': 'middle' }, stage, '');
+  return { leds, glow, flash, stopGlow, stateText, flashLevel: 0, stopLevel: 0 };
+});
+
+// ---------- live state ----------
+let state = null;
+let now = () => RC.serverNow();
+let otherUntil = 0, allLevel = 0, memoryLevel = 0;
+const beatLevels = [0, 0, 0, 0];
+
+function applyState(s) {
+  state = s;
+  offline.textContent = s.connected ? '' : 'Looper not connected';
+  if (title) {
+    title.textContent = s.memory.name || `Memory ${s.memory.number}`;
+    const bpm = s.tempo ?? s.snapshotTempo;
+    sub.textContent = `Memory ${String(s.memory.number).padStart(2, '0')}${bpm ? ` · ${bpm.toFixed(1)} BPM` : ''}`;
+  }
+  s.tracks.forEach((t, i) => {
+    const node = tracks[i];
+    node.stateText.textContent = STATE_TEXT[t.state];
+    node.stateText.setAttribute('fill', COLOR[t.state] || (t.state === 'stop' ? '#f2f2f5' : '#8b8b98'));
+    node.glow.setAttribute('fill', COLOR[t.state] || '#ffffff');
+    node.glow.setAttribute('opacity', COLOR[t.state] ? (outline ? .8 : .95) : 0);
+  });
+}
+function applyPress(p) {
+  const m = p.id.match(/^t([1-5])\.(\w+)$/);
+  if (m) { const node = tracks[m[1] - 1]; if (m[2] === 'stop') node.stopLevel = 1; else node.flashLevel = 1; }
+  else if (p.id === 'all') allLevel = 1;
+  else if (p.id === 'memory') memoryLevel = 1;
+  if (other) { other.textContent = p.label; otherUntil = performance.now() + 1800; }
+}
+function applyBeat(b) { beatLevels[b.n] = 1; }
+
+(function frame() {
+  if (state) {
+    const t = now();
+    const blink = Math.floor(performance.now() / 250) % 2 === 0;
+    state.tracks.forEach((track, i) => {
+      const node = tracks[i];
+      const p = RCRing.progress(track, t);
+      // Like the looper's own indicator: dark when empty, all lit when a loop is waiting,
+      // blinking while recording, loop position while playing.
+      const lit = track.state === 'empty' ? 0 : p === null ? RING.segments : Math.max(1, Math.ceil(p * RING.segments));
+      const level = track.state === 'stop' ? .5 : track.state === 'rec' ? (blink ? 1 : .15) : 1;
+      node.leds.forEach((led, n) => {
+        const on = n < lit;
+        led.setAttribute('fill', on ? COLOR.led : LED_OFF);
+        led.setAttribute('fill-opacity', on ? level : 1);
+      });
+      node.flash.setAttribute('opacity', node.flashLevel * .8);
+      node.stopGlow.setAttribute('opacity', node.stopLevel * .85);
+      node.flashLevel *= .86;
+      node.stopLevel *= .9;
+    });
+  }
+  beatDots.forEach((dot, i) => { dot.setAttribute('opacity', beatLevels[i]); beatLevels[i] *= .88; });
+  if (allGlow) { allGlow.setAttribute('opacity', allLevel * .85); allLevel *= .9; }
+  if (memoryGlow) { memoryGlow.setAttribute('opacity', memoryLevel * .7); memoryLevel *= .9; }
+  if (other && otherUntil && performance.now() > otherUntil) { other.textContent = ''; otherUntil = 0; }
+  requestAnimationFrame(frame);
+})();
+
+if (query.get('demo')) {
+  // A looped, made-up performance so the source can be placed without the looper.
+  now = () => Date.now();
+  const demo = { connected: true, memory: { number: 7, name: 'DEMO MEMORY' }, tempo: 120, snapshotTempo: 120,
+    tracks: [0, 1, 2, 3, 4].map(() => ({ state: 'empty', loopMs: 0, since: Date.now() })) };
+  const script = [
+    [0, 'recplay', 'rec'], [0, 'recplay', 'overdub'], [0, 'recplay', 'play'], [1, 'recplay', 'rec'], [1, 'recplay', 'play'],
+    [2, 'recplay', 'rec'], [2, 'recplay', 'overdub'], [0, 'stop', 'stop'], [2, 'recplay', 'play'], [3, 'recplay', 'rec'],
+    [3, 'recplay', 'play'], [1, 'stop', 'stop'], [0, 'recplay', 'play'], [4, 'recplay', 'rec'], [4, 'recplay', 'play'],
+  ];
+  let step = 0, beat = 0;
+  applyState(demo);
+  setInterval(() => applyBeat({ n: beat++ % 4 }), 500);
+  setInterval(() => {
+    if (step === script.length) {
+      step = 0;
+      demo.tracks.forEach((t) => Object.assign(t, { state: 'empty', loopMs: 0 }));
+      applyPress({ id: 'all', label: 'All Clear' });
+    } else {
+      const [i, action, next] = script[step++];
+      const t = demo.tracks[i];
+      const keep = (t.state === 'play' && next === 'overdub') || (t.state === 'overdub' && next === 'play');
+      Object.assign(t, { state: next, loopMs: t.loopMs || (next === 'rec' ? 0 : 4000), since: keep ? t.since : Date.now() });
+      applyPress({ id: `t${i + 1}.${action}`, label: `Track ${i + 1} ${STATE_TEXT[next]}` });
+    }
+    applyState(demo);
+  }, 2000);
+} else {
+  RC.on('state', applyState);
+  RC.on('press', applyPress);
+  RC.on('beat', applyBeat);
+  RC.on('link', (up) => { if (!up) offline.textContent = 'Bridge not running'; });
+}
+</script>
+</body>
+</html>

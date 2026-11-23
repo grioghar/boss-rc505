@@ -118,6 +118,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
         add("Overlay", [
             item("Copy Overlay URL for OBS", #selector(copyOverlayURL), "O"),
             item("Copy Outline Overlay URL for OBS", #selector(copyOutlineURL)),
+            item("Copy Panel Overlay URL for OBS", #selector(copyPanelURL)),
             .separator(),
             item("Preview Overlay in Browser", #selector(openOverlay)),
             item("Open Control Page in Browser", #selector(openControl)),
@@ -138,6 +139,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
     }
     @objc private func copyOverlayURL() { copy(baseURL.appendingPathComponent("overlay")) }
     @objc private func copyOutlineURL() { copy(URL(string: "overlay?style=outline", relativeTo: baseURL)!.absoluteURL) }
+    @objc private func copyPanelURL() { copy(URL(string: "panel?style=bold&backdrop=%23102040cc&fade=40", relativeTo: baseURL)!.absoluteURL) }
     @objc private func openOverlay() { NSWorkspace.shared.open(baseURL.appendingPathComponent("overlay")) }
     @objc private func openControl() { NSWorkspace.shared.open(baseURL) }
     @objc private func showControl() { showWindow() }

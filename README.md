@@ -11,6 +11,7 @@ Control a Boss RC-505 Loop Station (original model, firmware 2.0) from a Mac ove
   - `server.js` — the original Node.js version.
 - `http://localhost:5055/` — control page: per-track rec/play/overdub and stop, all start/stop, memory select.
 - `http://localhost:5055/overlay` — transparent OBS browser source in the RC-505's own colours: five track buttons with LED loop rings, an LCD-style memory/tempo readout, a beat pulse and a label on each press. Options: `?style=outline` (nothing filled, so video behind shows through), `?scale=1.5`, `?pos=top`, `?align=left|right`.
+- `http://localhost:5055/panel` — a second OBS overlay: a top-down line drawing of the whole RC-505 whose controls light up as they are used. Options: `style=outline` or `style=bold`, `backdrop=%23102040cc` (a soft-edged colour behind it) with `fade=40`, `deck=tracks` (track strips only), `demo=1` (made-up performance for positioning), `bg=` (flat test colour).
 - `GET /api/press/<action>` and `/api/memory/<n>` — for a Stream Deck or scripts (`t1.recplay` … `t5.recplay`, `t1.stop` … `t5.stop`, `all`).
 
 ## How the RC-505 is driven

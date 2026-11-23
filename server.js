@@ -274,7 +274,7 @@ const server = http.createServer((req, res) => {
   if ((m = url.pathname.match(/^\/api\/target\/([1-5])$/))) return json(200, { ok: setTargetTrack(Number(m[1])) });
   if (url.pathname === '/api/state') return json(200, { ...state, targetTrack });
   if (url.pathname === '/memories.json') return json(200, (snapshot?.memories || []).map((x) => ({ number: x.number, name: x.name })));
-  const file = { '/': 'control.html', '/overlay': 'overlay.html' }[url.pathname] || url.pathname.slice(1);
+  const file = { '/': 'control.html', '/overlay': 'overlay.html', '/panel': 'panel.html' }[url.pathname] || url.pathname.slice(1);
   const full = path.join(root, 'public', path.normalize(file));
   if (!full.startsWith(path.join(root, 'public')) || !fs.existsSync(full) || fs.statSync(full).isDirectory()) { res.writeHead(404); return res.end('Not found'); }
   res.writeHead(200, { 'content-type': types[path.extname(full)] || 'application/octet-stream', 'cache-control': 'no-store' });
