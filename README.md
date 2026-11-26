@@ -79,6 +79,7 @@ The assign and probe tools under `tools/` are Node scripts and are needed once, 
 - `node tools/snapshot.js` — copy the looper's settings to `device-backup/` and build `data/memories.json` (memory names, tempo, which tracks hold audio).
 - `node tools/assigns.js <plan.json> [--apply]` — dry-run or write assign slots.
 - `node tools/show-assigns.js <memory>` — print a memory's assigns.
+- `node tools/set-rec-action.js <memory> play|dub` — set a memory's REC ACTION (Rec → Play or the default Rec → Overdub), with a backup first.
 - `node tools/probe.js listen|cc|tap|pc|raw` and `tools/probe-seq.js` — low-level MIDI probing.
 
 Not affiliated with Roland or Boss.
