@@ -1,7 +1,7 @@
 {
   "httpPort": 5055,
   "midiPortMatch": "RC-505",
-  "midiChannel": 1,
+  "midiChannel": 4,
   "gapMs": 25,
   "report": { "rec": [1, 2, 3, 4, 5], "play": [6, 7, 8, 9, 10] },
   "control": { "targetStep": 20, "recPlay": 21, "stop": 22 }
